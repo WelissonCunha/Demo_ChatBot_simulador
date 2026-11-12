@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Simulador de atendente de WhatsApp</title>
+  <style>
+    :root {
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+      --bg: #f0f2f5;
+      --panel: #fff;
+      --text: #111b21;
+      --muted: #667781;
+      --line: #e1e5e8;
+      --head: #075e54;
+      --chat: #efeae2;
+      --in: #fff;
+      --out: #d9fdd3;
+      --accent: #128c7e;
+      --warn: #b45309;
+      --warnbg: #fef3c7;
+    }
+
+    @media (prefers-color-scheme:dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0b141a;
+        --panel: #111b21;
+        --text: #e9edef;
+        --muted: #8696a0;
+        --line: #222d34;
+        --head: #1f2c34;
+        --chat: #0b141a;
+        --in: #202c33;
+        --out: #005c4b;
+        --accent: #25d366;
+        --warn: #fbbf24;
+        --warnbg: #3b2f10;
+      }
+    }
+
+    :root[data-theme="dark"] {
+      --bg: #0b141a;
+      --panel: #111b21;
+      --text: #e9edef;
+      --muted: #8696a0;
+      --line: #222d34;
+      --head: #1f2c34;
+      --chat: #0b141a;
+      --in: #202c33;
+      --out: #005c4b;
+      --accent: #25d366;
+      --warn: #fbbf24;
+      --warnbg: #3b2f10
+    }
+
+    html {
+      scroll-padding-top: env(safe-area-inset-top, 0px)
+    }
+
+    * {
+      box-sizing: inherit
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font: 15px/1.4 "Segoe UI", Helvetica, Arial, sans-serif
+    }
+
+    .wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 16px
+    }
+
+    .top {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px
+    }
+
+    .top h1 {
+      font-size: 18px;
+      margin: 0;
+      font-weight: 600
+    }
+
+    .top p {
+      margin: 2px 0 0;
+      color: var(--muted);
+      font-size: 13px
+    }
+
+    .ctl {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      font-size: 14px
+    }
+
+    .ctl label {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      cursor: pointer
+    }
+
+    button {
+      font: inherit;
+      cursor: pointer
+    }
+
+    .btn {
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--text);
+      padding: 6px 12px;
+      border-radius: 8px
+    }
+
+    .btn:hover {
+      border-color: var(--accent)
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: minmax(0, 380px) minmax(0, 1fr);
+      gap: 20px;
+      align-items: start
+    }
+
+    @media (max-width:780px) {
+      .grid {
+        grid-template-columns: minmax(0, 1fr)
+      }
+    }
+
+    .phone {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      height: 620px;
+      max-height: 80vh
+    }
+
+    .ph-head {
+      background: var(--head);
+      color: #fff;
+      padding: 10px 14px;
+      display: flex;
+      gap: 10px;
+      align-items: center
+    }
+
+    .avatar {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      background: #25d366;
+      display: grid;
+      place-items: center;
+      font-size: 20px
+    }
+
+    .ph-head b {
+      display: block;
+      font-weight: 600
+    }
+
+    .ph-head small {
+      opacity: .8;
+      font-size: 12px
+    }
+
+    .chat {
+      flex: 1;
+      overflow-y: auto;
+      background: var(--chat);
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px
+    }
+
+    .msg {
+      max-width: 82%;
+      padding: 7px 10px 5px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      box-shadow: 0 1px 1px rgba(0, 0, 0, .12)
+    }
+
+    .msg.in {
+      align-self: flex-start;
+      background: var(--in);
+      border-top-left-radius: 2px
+    }
+
+    .msg.out {
+      align-self: flex-end;
+      background: var(--out);
+      border-top-right-radius: 2px
+    }
+
+    .msg time {
+      display: block;
+      text-align: right;
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px
+    }
+
+    .sys {
+      align-self: center;
+      background: var(--warnbg);
+      color: var(--warn);
+      font-size: 12px;
+      padding: 4px 10px;
+      border-radius: 8px
+    }
+
+    .typing {
+      align-self: flex-start;
+      background: var(--in);
+      padding: 9px 12px;
+      border-radius: 10px;
+      display: flex;
+      gap: 4px
+    }
+
+    .typing i {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--muted);
+      animation: b 1s infinite
+    }
+
+    .typing i:nth-child(2) {
+      animation-delay: .15s
+    }
+
+    .typing i:nth-child(3) {
+      animation-delay: .3s
+    }
+
+    @keyframes b {
+
+      0%,
+      60%,
+      100% {
+        opacity: .3
+      }
+
+      30% {
+        opacity: 1
+      }
+    }
+
+    @media (prefers-reduced-motion:reduce) {
+      .typing i {
+        animation: none
+      }
+    }
+
+    .chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      padding: 8px 10px;
+      background: var(--panel);
+      border-top: 1px solid var(--line)
+    }
+
+    .chip {
+      border: 1px solid var(--accent);
+      color: var(--accent);
+      background: transparent;
+      border-radius: 16px;
+      padding: 4px 12px;
+      font-size: 13px
+    }
+
+    .chip:hover {
+      background: var(--accent);
+      color: #fff
+    }
+
+    .send {
+      display: flex;
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--panel);
+      border-top: 1px solid var(--line)
+    }
+
+    .send input {
+      flex: 1;
+      min-width: 0;
+      border: 1px solid var(--line);
+      background: var(--bg);
+      color: var(--text);
+      border-radius: 20px;
+      padding: 9px 14px;
+      font: inherit
+    }
+
+    .send button {
+      border: 0;
+      background: var(--accent);
+      color: #fff;
+      border-radius: 50%;
+      width: 40px;
+      height: 40px;
+      font-size: 18px
+    }
+
+    .owner {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px
+    }
+
+    .owner h2 {
+      font-size: 16px;
+      margin: 0 0 2px
+    }
+
+    .owner>p {
+      margin: 0 0 12px;
+      color: var(--muted);
+      font-size: 13px
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 14px
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px
+    }
+
+    .stat b {
+      font-size: 22px;
+      display: block
+    }
+
+    .stat span {
+      font-size: 12px;
+      color: var(--muted)
+    }
+
+    .owner h3 {
+      font-size: 14px;
+      margin: 12px 0 6px
+    }
+
+    .list {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      font-size: 14px
+    }
+
+    .list li {
+      padding: 6px 0;
+      border-bottom: 1px solid var(--line)
+    }
+
+    .list li.empty {
+      color: var(--muted);
+      border: 0
+    }
+
+    .list .tag {
+      color: var(--warn)
+    }
+
+    .sum {
+      margin-top: 12px
+    }
+
+    .sumbox {
+      margin-top: 10px;
+      background: var(--out);
+      border-radius: 10px;
+      padding: 10px 12px;
+      white-space: pre-wrap;
+      font-size: 14px
+    }
+
+    .note {
+      margin-top: 14px;
+      font-size: 12px;
+      color: var(--muted)
+    }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="top">
+      <div>
+        <h1>Atendente virtual: demonstração</h1>
+        <p>Converse como se fosse um cliente. À direita, o que o dono do negócio acompanha.</p>
+      </div>
+      <div class="ctl">
+        <label><input type="checkbox" id="after"> Simular 22h (fechado)</label>
+        <button class="btn" id="reset">Reiniciar</button>
+      </div>
+    </div>
+
+    <div class="grid">
+      <section class="phone" aria-label="Conversa de WhatsApp">
+        <div class="ph-head">
+          <div class="avatar">💈</div>
+          <div><b id="biz">Negócio</b><small>assistente virtual · online</small></div>
+        </div>
+        <div class="chat" id="chat" aria-live="polite"></div>
+        <div class="chips" id="chips"></div>
+        <div class="send">
+          <input id="inp" placeholder="Digite uma mensagem" autocomplete="off" aria-label="Mensagem">
+          <button id="go" aria-label="Enviar">➤</button>
+        </div>
+      </section>
+
+      <section class="owner" aria-label="Painel do dono">
+        <h2>Painel do dono</h2>
+        <p>Atualiza em tempo real durante a conversa.</p>
+        <div class="stats">
+          <div class="stat"><b id="n-ag">0</b><span>agendamentos</span></div>
+          <div class="stat"><b id="n-du">0</b><span>dúvidas respondidas</span></div>
+          <div class="stat"><b id="n-hu">0</b><span>precisam de você</span></div>
+        </div>
+        <h3>Agenda de amanhã</h3>
+        <ul class="list" id="l-ag"></ul>
+        <h3>Aguardando atendimento humano</h3>
+        <ul class="list" id="l-hu"></ul>
+        <div class="sum">
+          <button class="btn" id="sum">Gerar resumo do dia</button>
+          <div id="sumbox"></div>
+        </div>
+        <p class="note">Demonstração com respostas programadas. Na versão real, o modelo de IA conversa livremente e usa
+          as mesmas funções (consultar horários, agendar, chamar humano).</p>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    /* ===== DADOS DO NEGÓCIO: troque aqui para cada cliente ===== */
+    const NEG = {
+      nome: "Du Corte",
+      endereco: "Rua 1º de Maio, 120, Centro, Anápolis",
+      funcionamento: "segunda a sábado, das 9h às 20h",
+      servicos: [
+        { id: "corte", nome: "Corte", preco: 40 },
+        { id: "barba", nome: "Barba", preco: 30 },
+        { id: "combo", nome: "Combo corte + barba", preco: 60 }
+      ],
+      horarios: ["09:00", "10:30", "14:00", "16:30", "18:00"]
+    };
+    /* =========================================================== */
+
+    const $ = s => document.querySelector(s);
+    const norm = t => t.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    const cap = s => s.charAt(0).toUpperCase() + s.slice(1).toLowerCase();
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
+    const now = () => new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
+    const money = v => "R$ " + v;
+
+    let st, log, busy = false;
+
+    function reset() {
+      st = { step: "idle", greeted: false, serv: null, hora: null };
+      log = { ag: [], du: 0, hu: [] };
+      $("#chat").innerHTML = "";
+      $("#sumbox").innerHTML = "";
+      setChips(["Quanto custa?", "Quero agendar", "Onde fica?", "Falar com atendente"]);
+      renderOwner();
+    }
+
+    function livre() {
+      const ocupados = log.ag.map(a => a.hora);
+      return NEG.horarios.filter(h => !ocupados.includes(h));
+    }
+
+    function addMsg(text, who) {
+      const d = document.createElement("div");
+      d.className = "msg " + who;
+      d.textContent = text;
+      const t = document.createElement("time");
+      t.textContent = now();
+      d.appendChild(t);
+      $("#chat").appendChild(d);
+      $("#chat").scrollTop = 1e9;
+    }
+    function addSys(text) {
+      const d = document.createElement("div");
+      d.className = "sys";
+      d.textContent = text;
+      $("#chat").appendChild(d);
+      $("#chat").scrollTop = 1e9;
+    }
+    function setChips(list) {
+      const c = $("#chips");
+      c.innerHTML = "";
+      list.forEach(txt => {
+        const b = document.createElement("button");
+        b.className = "chip";
+        b.textContent = txt;
+        b.onclick = () => send(txt);
+        c.appendChild(b);
+      });
+      c.style.display = list.length ? "flex" : "none";
+    }
+
+    /* ===== lógica do bot ===== */
+    function parseServ(t) {
+      if (/combo/.test(t) || (/corte|cabelo/.test(t) && /barba/.test(t))) return NEG.servicos[2];
+      if (/barba/.test(t)) return NEG.servicos[1];
+      if (/corte|cabelo|cortar/.test(t)) return NEG.servicos[0];
+      return null;
+    }
+    function parseHora(t) {
+      const m = t.match(/(\d{1,2})\s*(?:h|hs|:)?\s*(\d{2})?/);
+      if (!m) return null;
+      return m[1].padStart(2, "0") + ":" + (m[2] || "00");
+    }
+    function handoff(raw) {
+      log.hu.push(raw);
+      st.step = "idle";
+      return { m: ["Entendi! Esse assunto eu prefiro passar para um atendente da equipe. Ele responde você por aqui em breve. 🙏"], c: ["Quero agendar", "Quanto custa?"], sys: "Conversa encaminhada para um humano" };
+    }
+    function pedirHora() {
+      const l = livre();
+      if (!l.length) return handoff("Cliente quer agendar, mas a agenda de amanhã está cheia");
+      st.step = "hora";
+      return { m: [`Perfeito, ${st.serv.nome} (${money(st.serv.preco)}). Para amanhã tenho: ${l.join(", ")}. Qual prefere?`], c: l };
+    }
+    function finalizar() {
+      log.ag.push({ nome: st.nome, serv: st.serv, hora: st.hora });
+      const r = { m: [`Agendado, ${st.nome}! ${st.serv.nome} amanhã às ${st.hora}. Te mando um lembrete 1h antes. Até lá! ✂️`], c: ["Quero agendar", "Onde fica?"], sys: "Dono notificado do novo agendamento" };
+      st.step = "idle"; st.serv = null; st.hora = null;
+      return r;
+    }
+
+    function think(raw) {
+      const t = norm(raw);
+
+      if (/atendente|humano|pessoa|reclam|gerente|dono|falar com/.test(t)) return handoff(raw);
+
+      if (st.step === "nome") {
+        st.nome = cap(raw.trim().split(/\s+/)[0].replace(/[^\p{L}]/gu, "") || "Cliente");
+        return finalizar();
+      }
+      if (st.step === "hora") {
+        const h = parseHora(t);
+        if (h) {
+          if (livre().includes(h)) { st.hora = h; st.step = "nome"; return { m: [`Anotado, ${h}. Qual é o seu nome?`], c: [] }; }
+          return { m: [`Esse horário não está livre. Tenho: ${livre().join(", ")}. Qual prefere?`], c: livre() };
+        }
+      }
+      if (st.step === "serv") {
+        const s = parseServ(t);
+        if (s) { st.serv = s; return pedirHora(); }
+      }
+
+      if (/preco|valor|quanto|custa|tabela/.test(t) && !/agend|marcar/.test(t)) {
+        log.du++;
+        return { m: ["Nossos valores:\n" + NEG.servicos.map(s => `• ${s.nome}: ${money(s.preco)}`).join("\n") + "\n\nQuer agendar?"], c: ["Quero agendar", "Onde fica?"] };
+      }
+      if (/onde|endereco|local|fica|chegar/.test(t)) {
+        log.du++;
+        return { m: [`Estamos na ${NEG.endereco}. 📍`], c: ["Quero agendar", "Quanto custa?"] };
+      }
+      if (/abre|fecha|funciona|aberto|ate que horas|horario de/.test(t)) {
+        log.du++;
+        return { m: [`Atendemos de ${NEG.funcionamento}.`], c: ["Quero agendar", "Onde fica?"] };
+      }
+      if (/agend|marcar|reserv|vaga|encaix|horario|amanha|hoje|quero|corte|barba|combo|cabelo|cortar|vcs/.test(t)) {
+        const s = parseServ(t);
+        if (s) { st.serv = s; return pedirHora(); }
+        st.step = "serv";
+        return { m: ["Claro! Qual serviço você quer?\n" + NEG.servicos.map(x => `• ${x.nome} (${money(x.preco)})`).join("\n")], c: NEG.servicos.map(x => x.nome) };
+      }
+      if (/^(oi|ola|bom dia|boa tarde|boa noite|e ai|opa)/.test(t)) {
+        return { m: ["Como posso ajudar?"], c: ["Quanto custa?", "Quero agendar", "Onde fica?"] };
+      }
+      return handoff(raw);
+    }
+
+    async function send(raw) {
+      raw = (raw || "").trim();
+      if (!raw || busy) return;
+      busy = true;
+      $("#inp").value = "";
+      setChips([]);
+      addMsg(raw, "out");
+      const r = think(raw);
+      const msgs = [];
+      if (!st.greeted) {
+        st.greeted = true;
+        const fechado = $("#after").checked;
+        msgs.push(`Olá! Sou o assistente virtual da ${NEG.nome} 💈` + (fechado ? "\nJá encerramos por hoje, mas posso resolver tudo por aqui agora mesmo." : ""));
+      }
+      msgs.push(...r.m);
+      for (const m of msgs) {
+        const ty = document.createElement("div");
+        ty.className = "typing"; ty.innerHTML = "<i></i><i></i><i></i>";
+        $("#chat").appendChild(ty); $("#chat").scrollTop = 1e9;
+        await sleep(600 + Math.min(m.length * 8, 700));
+        ty.remove();
+        addMsg(m, "in");
+      }
+      if (r.sys) addSys(r.sys);
+      setChips(r.c || []);
+      renderOwner();
+      busy = false;
+      $("#inp").focus();
+    }
+
+    /* ===== painel do dono ===== */
+    function li(html, cls) { const e = document.createElement("li"); if (cls) e.className = cls; e.innerHTML = html; return e; }
+    function esc(s) { return s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+    function renderOwner() {
+      $("#n-ag").textContent = log.ag.length;
+      $("#n-du").textContent = log.du;
+      $("#n-hu").textContent = log.hu.length;
+      const la = $("#l-ag"), lh = $("#l-hu");
+      la.innerHTML = ""; lh.innerHTML = "";
+      if (!log.ag.length) la.appendChild(li("Nenhum agendamento ainda.", "empty"));
+      log.ag.slice().sort((a, b) => a.hora.localeCompare(b.hora)).forEach(a =>
+        la.appendChild(li(`<b>${a.hora}</b> · ${esc(a.nome)} · ${esc(a.serv.nome)} (${money(a.serv.preco)})`)));
+      if (!log.hu.length) lh.appendChild(li("Ninguém esperando.", "empty"));
+      log.hu.forEach(m => lh.appendChild(li(`<span class="tag">Responder:</span> “${esc(m)}”`)));
+    }
+    function resumo() {
+      const total = log.ag.reduce((s, a) => s + a.serv.preco, 0);
+      let t = `Resumo do dia · ${NEG.nome}\n\n`;
+      t += `✅ ${log.ag.length} agendamento(s)` + (log.ag.length ? ` (${money(total)} previstos)` : "") + "\n";
+      log.ag.forEach(a => { t += `   ${a.hora} ${a.nome} (${a.serv.nome})\n`; });
+      t += `💬 ${log.du} dúvida(s) respondida(s) sem ajuda sua\n`;
+      t += log.hu.length ? `⚠️ ${log.hu.length} cliente(s) esperando você:\n` + log.hu.map(m => `   “${m}”`).join("\n") : "👍 Ninguém ficou sem resposta";
+      $("#sumbox").innerHTML = '<div class="sumbox"></div>';
+      $("#sumbox .sumbox").textContent = t;
+    }
+
+    $("#go").onclick = () => send($("#inp").value);
+    $("#inp").addEventListener("keydown", e => { if (e.key === "Enter") send($("#inp").value); });
+    $("#reset").onclick = () => { busy = false; reset(); };
+    $("#sum").onclick = resumo;
+    $("#biz").textContent = NEG.nome;
+    reset();
+  </script>
+</body>
+
+</html>
